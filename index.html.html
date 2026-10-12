@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dispatch</title>
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style id="css-dispatch">
+:root{--bg:#0e1116;--panel:#161b22;--panel2:#1f2630;--line:#2a323d;--text:#e6edf3;--muted:#8b98a5;--accent:#f5a524;--ink:#1a1200;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--blue:#58a6ff;--purple:#bc8cff;--r:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px 8px;max-width:1100px;margin:0 auto}
+.top h1{font-size:19px;margin:0;flex:1;letter-spacing:.2px}
+.top h1 span{color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.on{background:var(--ok)}.dot.off{background:var(--bad)}
+nav{display:flex;gap:4px;padding:0 12px;max-width:1100px;margin:0 auto;overflow-x:auto}
+nav button{background:none;border:0;padding:10px 12px;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;position:relative}
+nav button.act{color:var(--text);border-color:var(--accent)}
+.badge{background:var(--bad);color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:4px}
+main{max-width:1100px;margin:0 auto;padding:14px 16px 90px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;white-space:nowrap;color:var(--muted)}
+.chip.act{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.stat b{font-size:22px;display:block}.stat small{color:var(--muted)}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer}
+.card:active{background:var(--panel2)}
+.card .h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.card .no{font-weight:700}
+.muted{color:var(--muted)}.small{font-size:13px}
+.pill{border-radius:20px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.route{display:grid;grid-template-columns:14px 1fr;gap:2px 8px;margin:6px 0}
+.route i{width:10px;height:10px;border-radius:50%;margin-top:5px;display:block}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer}
+.btn.pri{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:700}
+.btn.bad{color:var(--bad)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:4;border-radius:30px;padding:14px 20px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.list .item{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:8px}
+.list .item .grow{flex:1;min-width:0}
+.ava{width:38px;height:38px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-weight:700;color:var(--accent);flex:none}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.scrim.show{display:flex}
+.sheet{background:var(--panel);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+@media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{margin:0 0 12px;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+.x{background:none;border:0;font-size:24px;color:var(--muted);cursor:pointer;padding:0 4px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{min-height:70px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+fieldset{border:1px solid var(--line);border-radius:var(--r);padding:4px 12px 12px;margin:12px 0 0}
+legend{color:var(--accent);font-weight:600;padding:0 6px;font-size:13px}
+.sec{margin-top:16px}.sec h3{font-size:13px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px;margin:0 0 8px}
+.tl{border-left:2px solid var(--line);margin-left:6px;padding-left:14px}
+.tl div{position:relative;padding:4px 0 8px}
+.tl div:before{content:"";position:absolute;left:-20px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.pods{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+.pods img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:#fff}
+.chat{display:flex;flex-direction:column;height:calc(100vh - 170px)}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:6px 0}
+.m{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--panel2)}
+.m.me{align-self:flex-end;background:var(--accent);color:var(--ink)}
+.m small{display:block;font-size:11px;opacity:.7;margin-top:2px}
+.send{display:flex;gap:8px;padding-top:8px}
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;z-index:40;box-shadow:0 6px 20px rgba(0,0,0,.5);max-width:92vw}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;display:grid;place-items:center}
+.lb img{max-width:96vw;max-height:90vh;background:#fff}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;font-size:12px;white-space:pre-wrap}
+ol li{margin-bottom:6px}
+a{color:var(--blue)}
+</style>
+<style id="css-driver">
+:root{--bg:#0e1116;--panel:#161b22;--panel2:#1f2630;--line:#2a323d;--text:#e6edf3;--muted:#8b98a5;--accent:#f5a524;--ink:#1a1200;--ok:#3fb950;--bad:#f85149;--blue:#58a6ff;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:10px}
+header h1{font-size:18px;margin:0;flex:1}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}.dot.off{background:var(--bad)}
+main{padding:14px 16px calc(90px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+.tabs button{flex:1;background:none;border:0;padding:12px 0 10px;color:var(--muted);font-size:13px}
+.tabs button b{display:block;font-size:20px}
+.tabs button.act{color:var(--accent)}
+.badge{background:var(--bad);color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:3px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card.tap{cursor:pointer}.card.tap:active{background:var(--panel2)}
+.card.new{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.pill{border-radius:20px;padding:3px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.muted{color:var(--muted)}.small{font-size:13px}
+.route{display:grid;grid-template-columns:14px 1fr;gap:4px 8px;margin:8px 0}
+.route i{width:10px;height:10px;border-radius:50%;margin-top:6px;display:block}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 16px;cursor:pointer;text-align:center;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:700}
+.btn.big{width:100%;padding:18px;font-size:18px;margin-top:8px}
+.btn.sm{padding:8px 12px;font-size:14px}
+.btn:disabled{opacity:.5}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:18px 0 8px}
+.sec{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.pinbox{font-size:28px;letter-spacing:12px;text-align:center}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.thumbs div{position:relative}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:#fff}
+.thumbs button{position:absolute;top:4px;right:4px;background:#000a;border:0;color:#fff;border-radius:50%;width:24px;height:24px}
+canvas.sig{width:100%;height:180px;background:#fff;border-radius:12px;touch-action:none;display:block}
+.chat{display:flex;flex-direction:column;height:calc(100vh - 170px)}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:4px 0}
+.m{max-width:82%;padding:9px 13px;border-radius:16px;background:var(--panel2)}
+.m.me{align-self:flex-end;background:var(--accent);color:var(--ink)}
+.m small{display:block;font-size:11px;opacity:.7;margin-top:2px}
+.send{display:flex;gap:8px;padding-top:8px}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);border-radius:12px;padding:12px 16px;z-index:40;box-shadow:0 6px 20px rgba(0,0,0,.5);max-width:92vw;text-align:center}
+.back{background:none;border:0;color:var(--accent);padding:0;font-size:16px;margin-bottom:10px;cursor:pointer}
+a{color:var(--blue)}
+.navbtn{display:flex;gap:8px;margin-top:8px}
+.navbtn a{flex:1}
+</style>
+</head>
+<body>
+<template id="tpl-dispatch">
+<header>
+  <div class="top"><h1>🚛 <span>Dispatch</span> Board</h1><span class="dot" id="conn" title="Connection"></span></div>
+  <nav id="nav">
+    <button data-t="board" class="act">Loads</button>
+    <button data-t="drivers">Drivers</button>
+    <button data-t="chat">Messages<span id="unread"></span></button>
+    <button data-t="settings">Settings</button>
+  </nav>
+</header>
+<main id="main"></main>
+<button class="btn pri fab" id="fab" style="display:none">+ New load</button>
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+
+</template>
+<template id="tpl-driver">
+<header><h1 id="hdr">🚛 Driver</h1><span class="dot" id="conn"></span></header>
+<main id="main"><div class="empty">Loading…</div></main>
+<div class="tabs" id="tabs" style="display:none">
+  <button data-t="loads" class="act"><b>📦</b>Loads</button>
+  <button data-t="chat"><b>💬</b>Dispatch<span id="unread"></span></button>
+  <button data-t="me"><b>👤</b>Me</button>
+</div>
+
+</template>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const DEFAULT_CFG = {
+  apiKey: "AIzaSyBVdik_3GXkzXf--CHKDe9ZzVxx0YKh3JU",
+  authDomain: "dispatch-66584.firebaseapp.com",
+  projectId: "dispatch-66584",
+  storageBucket: "dispatch-66584.firebasestorage.app",
+  messagingSenderId: "157941833241",
+  appId: "1:157941833241:web:af4f9a42caf4cf930fd488"
+};
+// One file, two apps: add ?driver to the link for the driver app
+const MODE = new URLSearchParams(location.search).has('driver') ? 'driver' : 'dispatch';
+const DRIVER_URL = location.origin + location.pathname + '?driver';
+document.getElementById(MODE==='driver' ? 'css-dispatch' : 'css-driver').remove();
+document.body.prepend(document.getElementById('tpl-'+MODE).content.cloneNode(true));
+document.title = MODE==='driver' ? 'Driver App' : 'Dispatch Board';
+
+if (MODE === 'dispatch') {
+
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const STATUSES = ['Assigned','Accepted','At pickup','Loaded','On ferry','At delivery','Delivered'];
+const SC = {'Assigned':'#8b98a5','Accepted':'#58a6ff','At pickup':'#bc8cff','Loaded':'#d29922','On ferry':'#39c5cf','At delivery':'#f5a524','Delivered':'#3fb950'};
+const pill = s => `<span class="pill" style="background:${SC[s]||'#555'}22;color:${SC[s]||'#aaa'};border:1px solid ${SC[s]||'#555'}66">${esc(s)}</span>`;
+const fmt = ts => ts ? new Date(ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+const fmtT = v => v ? new Date(v).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+const ago = ts => { if(!ts) return ''; const m=Math.round((Date.now()-ts)/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago'; };
+const mapsLink = a => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
+const pinLink = (lat,lng) => `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+let db = null, ready = false;
+const S = { drivers:[], loads:[], messages:[], tab:'board', filter:'active', chatDriver:null, podUnsub:null, openLoad:null, pods:[] };
+
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),3500); }
+function openSheet(html){ $('#sheet').innerHTML=html; $('#scrim').classList.add('show'); }
+function closeSheet(){ $('#scrim').classList.remove('show'); if(S.podUnsub){S.podUnsub();S.podUnsub=null;} S.openLoad=null; }
+$('#scrim').addEventListener('click', e => { if(e.target.id==='scrim') closeSheet(); });
+
+function parseConfig(text){
+  const cfg={}; const re=/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g; let m;
+  while((m=re.exec(text))) cfg[m[1]]=m[2];
+  return (cfg.apiKey && cfg.projectId && cfg.appId) ? cfg : null;
+}
+const driverName = id => (S.drivers.find(d=>d.id===id)||{}).name || 'Unassigned';
+
+// ---------- connect ----------
+async function connect(){
+  const cfg = LS.get('fb_cfg', DEFAULT_CFG);
+  if(!cfg){ S.tab='settings'; render(); return; }
+  try{
+    const app = initializeApp(cfg);
+    db = initializeFirestore(app, { localCache: persistentLocalCache() });
+    await signInAnonymously(getAuth(app));
+    ready = true; $('#conn').className='dot on';
+    subscribe(); render();
+  }catch(e){
+    console.error(e); S.connErr = e.code || e.message; $('#conn').className='dot off'; S.tab='settings'; render();
+  }
+}
+function subscribe(){
+  const err = e => { console.error(e); toast('Sync error: '+(e.code||e.message)); };
+  onSnapshot(collection(db,'drivers'), s => { S.drivers = s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||'').localeCompare(b.name||'')); render(); }, err);
+  let first = true;
+  onSnapshot(collection(db,'loads'), s => {
+    if(!first) s.docChanges().forEach(c => {
+      if(c.type==='modified'){ const d=c.doc.data(); const h=(d.history||[]).slice(-1)[0]; if(h && h.by==='driver' && Date.now()-h.ts<60000) toast(`${driverName(d.driverId)}: ${h.s} — #${d.loadNo}`); }
+    });
+    first=false;
+    S.loads = s.docs.map(d=>({id:d.id,...d.data()}));
+    render(); if(S.openLoad) showLoad(S.openLoad, true);
+  }, err);
+  let firstM = true;
+  onSnapshot(query(collection(db,'messages'), where('ts','>=', Date.now()-30*864e5)), s => {
+    if(!firstM) s.docChanges().forEach(c => { const d=c.doc.data(); if(c.type==='added' && d.from==='driver' && !(S.tab==='chat'&&S.chatDriver===d.driverId)) toast(`💬 ${driverName(d.driverId)}: ${d.text}`); });
+    firstM=false;
+    S.messages = s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.ts-b.ts);
+    render();
+  }, err);
+}
+window.addEventListener('online',()=>ready&&($('#conn').className='dot on'));
+window.addEventListener('offline',()=>$('#conn').className='dot off');
+
+// ---------- nav ----------
+$('#nav').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; S.tab=b.dataset.t; if(S.tab!=='chat') S.chatDriver=null; render(); });
+$('#fab').onclick = () => loadForm();
+
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act', b.dataset.t===S.tab));
+  const un = S.messages.filter(m=>m.from==='driver' && !m.readD).length;
+  $('#unread').innerHTML = un ? `<span class="badge">${un}</span>` : '';
+  $('#fab').style.display = (S.tab==='board' && ready) ? 'block' : 'none';
+  const m = $('#main');
+  if(!ready && S.tab!=='settings'){ m.innerHTML='<div class="empty">Connecting…</div>'; return; }
+  if(S.tab==='board') m.innerHTML = boardView();
+  else if(S.tab==='drivers') m.innerHTML = driversView();
+  else if(S.tab==='chat') { m.innerHTML = chatView(); const ms=$('#msgs'); if(ms) ms.scrollTop=ms.scrollHeight; markRead(); }
+  else m.innerHTML = settingsView();
+}
+
+// ---------- board ----------
+function boardView(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const active = S.loads.filter(l=>l.status!=='Delivered');
+  const delToday = S.loads.filter(l=>l.status==='Delivered' && (l.updatedAt||0)>=today.getTime());
+  let list = S.filter==='active' ? active : S.filter==='delivered' ? S.loads.filter(l=>l.status==='Delivered') : S.filter==='all' ? S.loads : S.loads.filter(l=>l.driverId===S.filter && l.status!=='Delivered');
+  list = list.slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const chips = [['active','Active'],['delivered','Delivered'],['all','All'], ...S.drivers.map(d=>[d.id,d.name])]
+    .map(([k,t])=>`<button class="chip ${S.filter===k?'act':''}" data-filter="${esc(k)}">${esc(t)}</button>`).join('');
+  return `<div class="stats">
+    <div class="stat"><b>${active.length}</b><small>Active loads</small></div>
+    <div class="stat"><b>${active.filter(l=>l.status==='On ferry').length}</b><small>On ferry</small></div>
+    <div class="stat"><b>${delToday.length}</b><small>Delivered today</small></div></div>
+    <div class="chips">${chips}</div>
+    ${list.length ? `<div class="grid">${list.map(loadCard).join('')}</div>` : `<div class="empty">No loads here.<br>Tap <b>+ New load</b> to dispatch one.</div>`}`;
+}
+function loadCard(l){
+  return `<div class="card" data-load="${l.id}">
+    <div class="h"><span class="no">#${esc(l.loadNo)}</span>${pill(l.status)}</div>
+    <div class="small">👤 ${esc(driverName(l.driverId))}${l.trailer?` · Trailer ${esc(l.trailer)}`:''}</div>
+    <div class="route small">
+      <i style="background:var(--blue)"></i><div>${esc(l.pickup?.name||l.pickup?.addr||'—')} <span class="muted">${fmtT(l.pickup?.time)}</span></div>
+      <i style="background:var(--ok)"></i><div>${esc(l.delivery?.name||l.delivery?.addr||'—')} <span class="muted">${fmtT(l.delivery?.time)}</span></div>
+    </div>
+    <div class="muted small">Updated ${ago(l.updatedAt)}${l.lastLoc?' · 📍':''}</div></div>`;
+}
+$('#main').addEventListener('click', e => {
+  const f = e.target.closest('[data-filter]'); if(f){ S.filter=f.dataset.filter; render(); return; }
+  const c = e.target.closest('[data-load]'); if(c){ showLoad(c.dataset.load); return; }
+  const a = e.target.closest('[data-act]'); if(a) actions[a.dataset.act]?.(a.dataset.id, a);
+});
+$('#sheet').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if(a) actions[a.dataset.act]?.(a.dataset.id, a);
+  const img = e.target.closest('.pods img'); if(img){ const d=document.createElement('div'); d.className='lb'; d.innerHTML=`<img src="${img.src}">`; d.onclick=()=>d.remove(); document.body.appendChild(d); }
+});
+
+function showLoad(id, refresh){
+  const l = S.loads.find(x=>x.id===id); if(!l){ if(refresh) closeSheet(); return; }
+  if(!refresh || S.openLoad!==id){
+    if(S.podUnsub) S.podUnsub();
+    S.pods=[]; S.openLoad=id;
+    S.podUnsub = onSnapshot(query(collection(db,'pods'), where('loadId','==',id)), s => { S.pods = s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.ts-b.ts); if(S.openLoad===id) showLoad(id,true); });
+  }
+  const hist = (l.history||[]).slice().reverse().map(h=>`<div><b>${esc(h.s)}</b> <span class="muted small">${fmt(h.ts)} · ${h.by==='driver'?'driver':'dispatch'}</span>${h.lat?` · <a href="${pinLink(h.lat,h.lng)}" target="_blank">📍 map</a>`:''}${h.note?`<div class="small muted">${esc(h.note)}</div>`:''}</div>`).join('');
+  const photos = S.pods.filter(p=>p.kind!=='sig'), sigs = S.pods.filter(p=>p.kind==='sig');
+  openSheet(`<h2>Load #${esc(l.loadNo)} <button class="x" data-act="close">×</button></h2>
+    <div class="row">${pill(l.status)} <span class="muted small">👤 ${esc(driverName(l.driverId))}</span></div>
+    <div class="sec"><h3>Pickup</h3><div><b>${esc(l.pickup?.name)}</b></div>${l.pickup?.addr?`<a href="${mapsLink(l.pickup.addr)}" target="_blank">${esc(l.pickup.addr)}</a>`:''}<div class="muted small">${fmtT(l.pickup?.time)}</div></div>
+    <div class="sec"><h3>Delivery</h3><div><b>${esc(l.delivery?.name)}</b></div>${l.delivery?.addr?`<a href="${mapsLink(l.delivery.addr)}" target="_blank">${esc(l.delivery.addr)}</a>`:''}<div class="muted small">${fmtT(l.delivery?.time)}</div></div>
+    ${(l.trailer||l.ferry||l.ref)?`<div class="sec"><h3>Details</h3>${l.trailer?`<div>Trailer: <b>${esc(l.trailer)}</b></div>`:''}${l.ref?`<div>PO / Ref: <b>${esc(l.ref)}</b></div>`:''}${l.ferry?`<div>Ferry: <b>${esc(l.ferry)}</b></div>`:''}</div>`:''}
+    ${l.notes?`<div class="sec"><h3>Notes</h3><div style="white-space:pre-wrap">${esc(l.notes)}</div></div>`:''}
+    ${l.lastLoc?`<div class="sec"><h3>Last location</h3><a href="${pinLink(l.lastLoc.lat,l.lastLoc.lng)}" target="_blank">📍 Open in Maps</a> <span class="muted small">${ago(l.lastLoc.ts)}</span></div>`:''}
+    <div class="sec"><h3>Proof of delivery / documents (${photos.length+sigs.length})</h3>
+      ${photos.length||sigs.length?`<div class="pods">${photos.map(p=>`<img src="${p.img}" alt="doc">`).join('')}${sigs.map(p=>`<img src="${p.img}" alt="signature" title="${esc(p.signer||'')}">`).join('')}</div>${sigs.map(p=>`<div class="small muted">Signed by ${esc(p.signer||'—')} · ${fmt(p.ts)}</div>`).join('')}`:'<div class="muted small">None yet.</div>'}</div>
+    <div class="sec"><h3>Set status</h3><div class="row"><select id="setStatus" style="flex:1">${STATUSES.map(s=>`<option ${s===l.status?'selected':''}>${s}</option>`).join('')}</select><button class="btn" data-act="setStatus" data-id="${l.id}">Update</button></div></div>
+    <div class="sec"><h3>History</h3><div class="tl">${hist||'<div class="muted">—</div>'}</div></div>
+    <div class="row" style="margin-top:16px"><button class="btn" data-act="edit" data-id="${l.id}">Edit</button><button class="btn" data-act="msgDriver" data-id="${l.driverId}">Message driver</button><span style="flex:1"></span><button class="btn bad" data-act="delLoad" data-id="${l.id}">Delete</button></div>`);
+}
+
+function loadForm(id){
+  const l = id ? S.loads.find(x=>x.id===id) : null;
+  if(!S.drivers.length){ toast('Add a driver first (Drivers tab).'); S.tab='drivers'; render(); return; }
+  const nextNo = String(1000 + S.loads.length + 1);
+  openSheet(`<h2>${l?'Edit load':'New load'} <button class="x" data-act="close">×</button></h2>
+  <form id="lf">
+    <div class="two"><div><label>Load #</label><input name="loadNo" required value="${esc(l?.loadNo||nextNo)}"></div>
+    <div><label>Driver</label><select name="driverId">${S.drivers.map(d=>`<option value="${d.id}" ${l?.driverId===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select></div></div>
+    <fieldset><legend>Pickup</legend>
+      <label>Shipper / name</label><input name="pName" value="${esc(l?.pickup?.name)}">
+      <label>Address</label><input name="pAddr" value="${esc(l?.pickup?.addr)}">
+      <label>Appointment</label><input type="datetime-local" name="pTime" value="${esc(l?.pickup?.time)}"></fieldset>
+    <fieldset><legend>Delivery</legend>
+      <label>Consignee / name</label><input name="dName" value="${esc(l?.delivery?.name)}">
+      <label>Address</label><input name="dAddr" value="${esc(l?.delivery?.addr)}">
+      <label>Appointment</label><input type="datetime-local" name="dTime" value="${esc(l?.delivery?.time)}"></fieldset>
+    <div class="two"><div><label>Trailer #</label><input name="trailer" value="${esc(l?.trailer)}"></div><div><label>PO / Ref #</label><input name="ref" value="${esc(l?.ref)}"></div></div>
+    <label>Ferry booking</label><input name="ferry" placeholder="e.g. TSA→DUK 10:15, conf #" value="${esc(l?.ferry)}">
+    <label>Notes for driver</label><textarea name="notes">${esc(l?.notes)}</textarea>
+    <button class="btn pri" style="width:100%;margin-top:14px">${l?'Save changes':'Dispatch load'}</button>
+  </form>`);
+  $('#lf').onsubmit = async e => {
+    e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+    const now = Date.now();
+    const data = { loadNo:f.loadNo.trim(), driverId:f.driverId, trailer:f.trailer.trim(), ref:f.ref.trim(), ferry:f.ferry.trim(), notes:f.notes.trim(),
+      pickup:{name:f.pName.trim(),addr:f.pAddr.trim(),time:f.pTime}, delivery:{name:f.dName.trim(),addr:f.dAddr.trim(),time:f.dTime}, updatedAt:now };
+    try{
+      if(l){
+        if(l.driverId!==data.driverId) data.history = arrayUnion({s:l.status,ts:now,by:'dispatch',note:'Reassigned to '+driverName(data.driverId)});
+        await updateDoc(doc(db,'loads',l.id), data); toast('Load updated');
+      } else {
+        Object.assign(data,{status:'Assigned',createdAt:now,history:[{s:'Assigned',ts:now,by:'dispatch',note:'Sent to '+driverName(data.driverId)}]});
+        addDoc(collection(db,'loads'), data); toast('Load #'+data.loadNo+' sent to '+driverName(data.driverId));
+      }
+      closeSheet();
+    }catch(err){ toast('Save failed: '+(err.code||err.message)); }
+  };
+}
+
+// ---------- drivers ----------
+function driversView(){
+  return `<div class="row" style="margin-bottom:12px"><div style="flex:1" class="muted small">${S.drivers.length} driver${S.drivers.length===1?'':'s'}</div><button class="btn pri" data-act="addDriver">+ Add driver</button></div>
+  <div class="list">${S.drivers.map(d=>{
+    const cur = S.loads.filter(l=>l.driverId===d.id && l.status!=='Delivered').sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+    return `<div class="item"><div class="ava">${esc((d.name||'?')[0].toUpperCase())}</div>
+      <div class="grow"><b>${esc(d.name)}</b> <span class="muted small">${d.truck?'Truck '+esc(d.truck):''}</span>
+      <div class="small">${cur?`#${esc(cur.loadNo)} ${pill(cur.status)}`:'<span class="muted">No active load</span>'}</div>
+      ${d.phone?`<div class="small"><a href="tel:${esc(d.phone)}">${esc(d.phone)}</a></div>`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><button class="btn sm" data-act="shareDriver" data-id="${d.id}">Setup link</button><button class="btn sm" data-act="editDriver" data-id="${d.id}">Edit</button></div></div>`;
+  }).join('') || '<div class="empty">No drivers yet.</div>'}</div>`;
+}
+function driverForm(id){
+  const d = id ? S.drivers.find(x=>x.id===id) : null;
+  openSheet(`<h2>${d?'Edit driver':'Add driver'} <button class="x" data-act="close">×</button></h2>
+  <form id="df"><label>Name</label><input name="name" required value="${esc(d?.name)}">
+  <div class="two"><div><label>Phone</label><input name="phone" type="tel" value="${esc(d?.phone)}"></div><div><label>Truck #</label><input name="truck" value="${esc(d?.truck)}"></div></div>
+  <label>Driver PIN (4 digits)</label><input name="pin" inputmode="numeric" pattern="\\d{4}" required value="${esc(d?.pin||String(Math.floor(1000+Math.random()*9000)))}">
+  <button class="btn pri" style="width:100%;margin-top:14px">Save</button>
+  ${d?`<button type="button" class="btn bad" style="width:100%;margin-top:8px" data-act="delDriver" data-id="${d.id}">Remove driver</button>`:''}</form>`);
+  $('#df').onsubmit = async e => {
+    e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+    const data = {name:f.name.trim(),phone:f.phone.trim(),truck:f.truck.trim(),pin:f.pin.trim()};
+    try{ d ? await updateDoc(doc(db,'drivers',d.id),data) : await addDoc(collection(db,'drivers'),data); closeSheet(); toast('Driver saved'); }
+    catch(err){ toast('Save failed: '+(err.code||err.message)); }
+  };
+}
+
+// ---------- chat ----------
+function chatView(){
+  if(!S.chatDriver){
+    return `<div class="list">${S.drivers.map(d=>{
+      const ms = S.messages.filter(m=>m.driverId===d.id); const last = ms[ms.length-1];
+      const un = ms.filter(m=>m.from==='driver'&&!m.readD).length;
+      return `<div class="item" data-act="openChat" data-id="${d.id}" style="cursor:pointer"><div class="ava">${esc(d.name[0].toUpperCase())}</div>
+        <div class="grow"><b>${esc(d.name)}</b>${un?`<span class="badge">${un}</span>`:''}<div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${last?esc((last.from==='dispatch'?'You: ':'')+last.text):'No messages'}</div></div>
+        <span class="muted small">${last?ago(last.ts):''}</span></div>`;}).join('') || '<div class="empty">Add drivers to start messaging.</div>'}</div>`;
+  }
+  const d = S.drivers.find(x=>x.id===S.chatDriver);
+  const ms = S.messages.filter(m=>m.driverId===S.chatDriver);
+  return `<div class="chat"><div class="row"><button class="btn sm" data-act="backChat">‹ Back</button><b style="flex:1">${esc(d?.name)}</b>${d?.phone?`<a class="btn sm" href="tel:${esc(d.phone)}">📞 Call</a>`:''}</div>
+  <div class="msgs" id="msgs">${ms.map(m=>`<div class="m ${m.from==='dispatch'?'me':''}">${esc(m.text)}<small>${fmt(m.ts)}${m.from==='dispatch'&&m.readR?' · seen':''}</small></div>`).join('')||'<div class="empty">No messages yet.</div>'}</div>
+  <form class="send" id="sendF"><input id="msgIn" placeholder="Message ${esc(d?.name)}…" autocomplete="off"><button class="btn pri">Send</button></form></div>`;
+}
+function markRead(){
+  if(!S.chatDriver || !db) return;
+  const un = S.messages.filter(m=>m.driverId===S.chatDriver && m.from==='driver' && !m.readD);
+  if(!un.length) return; const b = writeBatch(db); un.forEach(m=>{ m.readD=true; b.update(doc(db,'messages',m.id),{readD:true}); }); b.commit().catch(console.error);
+}
+$('#main').addEventListener('submit', e => {
+  if(e.target.id!=='sendF') return; e.preventDefault();
+  const t = $('#msgIn').value.trim(); if(!t) return;
+  addDoc(collection(db,'messages'), {driverId:S.chatDriver, from:'dispatch', text:t, ts:Date.now(), readD:true, readR:false});
+  $('#msgIn').value='';
+});
+
+// ---------- settings ----------
+function settingsView(){
+  const cfg = LS.get('fb_cfg', DEFAULT_CFG);
+  return `${S.connErr?`<div class="card" style="border-color:var(--bad);cursor:default"><b style="color:var(--bad)">Couldn't connect:</b> ${esc(S.connErr)}<div class="small muted">If it says <i>admin-restricted-operation</i> or <i>operation-not-allowed</i>, turn on Anonymous sign-in (step 4 below).</div></div>`:''}
+  <div class="sec"><h3>Firebase connection ${cfg?(ready?'· <span style="color:var(--ok)">connected</span>':''):''}</h3>
+    <label>Paste your firebaseConfig</label><textarea id="cfgIn" style="min-height:140px" placeholder='const firebaseConfig = { apiKey: "...", ... };'>${cfg?esc(JSON.stringify(cfg,null,2)):''}</textarea>
+    <button class="btn pri" style="margin-top:8px" data-act="saveCfg">Save & connect</button></div>
+  <div class="sec"><h3>Driver app link</h3>
+    <div class="small"><a href="${DRIVER_URL}" target="_blank">${esc(DRIVER_URL)}</a></div>
+    <div class="small muted" style="margin-top:6px">Drivers use this link. Easiest: Drivers tab → <b>Setup link</b>, which also connects their phone automatically.</div></div>
+  <div class="sec"><h3>One-time Firebase setup</h3><ol class="small">
+    <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <b>Create project</b> (Analytics off is fine).</li>
+    <li>Build → <b>Firestore Database</b> → Create database → <b>production mode</b> → pick a Canadian region (e.g. northamerica-northeast2).</li>
+    <li>Firestore → <b>Rules</b> tab → replace with the rules below → Publish.</li>
+    <li>Build → <b>Authentication</b> → Get started → Sign-in method → enable <b>Anonymous</b>.</li>
+    <li>Project settings (⚙️) → Your apps → <b>Web &lt;/&gt;</b> → register → copy the <code>firebaseConfig</code> block and paste it above.</li></ol>
+    <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre></div>`;
+}
+
+// ---------- actions ----------
+const actions = {
+  close: closeSheet,
+  edit: id => loadForm(id),
+  addDriver: () => driverForm(),
+  editDriver: id => driverForm(id),
+  openChat: id => { S.chatDriver=id; render(); },
+  backChat: () => { S.chatDriver=null; render(); },
+  msgDriver: id => { closeSheet(); S.tab='chat'; S.chatDriver=id; render(); },
+  async setStatus(id){
+    const s = $('#setStatus').value, now = Date.now();
+    await updateDoc(doc(db,'loads',id), {status:s, updatedAt:now, history:arrayUnion({s,ts:now,by:'dispatch'})}); toast('Status set to '+s);
+  },
+  async delLoad(id){
+    if(!confirm('Delete this load and its photos?')) return;
+    const pods = await getDocs(query(collection(db,'pods'), where('loadId','==',id)));
+    const b = writeBatch(db); pods.forEach(p=>b.delete(p.ref)); b.delete(doc(db,'loads',id)); await b.commit(); closeSheet(); toast('Load deleted');
+  },
+  async delDriver(id){
+    if(S.loads.some(l=>l.driverId===id && l.status!=='Delivered')){ alert('This driver still has active loads. Reassign or deliver them first.'); return; }
+    if(!confirm('Remove this driver?')) return; await deleteDoc(doc(db,'drivers',id)); closeSheet();
+  },
+  async shareDriver(id){
+    const d = S.drivers.find(x=>x.id===id);
+    const url = DRIVER_URL + '#cfg=' + btoa(JSON.stringify(LS.get('fb_cfg',DEFAULT_CFG)));
+    const text = `Hi ${d.name}, open this to set up the dispatch app: ${url}\nYour PIN: ${d.pin}`;
+    if(navigator.share){ try{ await navigator.share({title:'Driver app', text}); return; }catch{} }
+    try{ await navigator.clipboard.writeText(text); toast('Setup link + PIN copied — paste it in a text to '+d.name); }catch{ prompt('Copy this and send to the driver:', text); }
+  },
+  saveCfg(){
+    const cfg = parseConfig($('#cfgIn').value);
+    if(!cfg){ alert("That doesn't look like a Firebase config — it needs apiKey, projectId and appId."); return; }
+    LS.set('fb_cfg', cfg); location.reload();
+  }
+};
+
+render(); connect();
+
+} else {
+
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
+const SC = {'Assigned':'#8b98a5','Accepted':'#58a6ff','At pickup':'#bc8cff','Loaded':'#d29922','On ferry':'#39c5cf','At delivery':'#f5a524','Delivered':'#3fb950'};
+const NEXT = {'Assigned':['Accepted'],'Accepted':['At pickup'],'At pickup':['Loaded'],'Loaded':['On ferry','At delivery'],'On ferry':['At delivery'],'At delivery':['Delivered']};
+const LABEL = {'Accepted':'✅ Accept load','At pickup':'📍 Arrived at pickup','Loaded':'📦 Loaded — departing','On ferry':'⛴️ On the ferry','At delivery':'📍 Arrived at delivery','Delivered':'✍️ Complete delivery (POD)'};
+const pill = s => `<span class="pill" style="background:${SC[s]||'#555'}22;color:${SC[s]||'#aaa'};border:1px solid ${SC[s]||'#555'}66">${esc(s)}</span>`;
+const fmt = ts => ts ? new Date(ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+const fmtT = v => v ? new Date(v).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+const mapsNav = a => 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(a);
+
+let db = null;
+const S = { me: LS.get('drv_id', null), drivers:[], loads:[], messages:[], tab:'loads', open:null, pod:null, seen: new Set(LS.get('seen_loads', [])) };
+const meName = () => (S.drivers.find(d=>d.id===S.me)||{}).name || '';
+
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),3500); }
+function buzz(){ try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch{} }
+function parseConfig(text){ const cfg={}; const re=/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g; let m; while((m=re.exec(text))) cfg[m[1]]=m[2]; return (cfg.apiKey&&cfg.projectId&&cfg.appId)?cfg:null; }
+
+// setup link: #cfg=base64
+(function readHash(){
+  const m = location.hash.match(/cfg=([^&]+)/);
+  if(m){ try{ const cfg = JSON.parse(atob(decodeURIComponent(m[1]))); if(cfg.apiKey){ LS.set('fb_cfg', cfg); } }catch(e){ console.error(e); }
+    history.replaceState(null,'',location.pathname+location.search); }
+})();
+
+function setOnline(){ $('#conn').className = 'dot' + (navigator.onLine ? '' : ' off'); }
+window.addEventListener('online', ()=>{ setOnline(); toast('Back online — syncing'); });
+window.addEventListener('offline', ()=>{ setOnline(); toast('Offline — updates will sync when signal returns'); });
+setOnline();
+
+async function start(){
+  const cfg = LS.get('fb_cfg', DEFAULT_CFG);
+  if(!cfg){ return setupView(); }
+  try{
+    const app = initializeApp(cfg);
+    db = initializeFirestore(app, { localCache: persistentLocalCache() });
+    await signInAnonymously(getAuth(app));
+  }catch(e){ console.error(e); $('#main').innerHTML = `<div class="card"><b style="color:var(--bad)">Couldn't connect</b><div class="small muted">${esc(e.code||e.message)}</div><button class="btn big" onclick="localStorage.removeItem('fb_cfg');location.reload()">Reset setup</button></div>`; return; }
+  onSnapshot(collection(db,'drivers'), s => {
+    S.drivers = s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    if(S.me && !S.drivers.find(d=>d.id===S.me) && !s.metadata.fromCache){ LS.del('drv_id'); S.me=null; location.reload(); return; }
+    if(!S.me) loginView(); else if(!S.subscribed) afterLogin(); else render();
+  }, e => toast('Sync error: '+(e.code||e.message)));
+}
+
+function setupView(){
+  $('#main').innerHTML = `<div class="card"><h2 style="margin-top:0">Set up</h2>
+    <p class="small muted">Ask dispatch for your setup link and open it on this phone. Or paste the Firebase config here:</p>
+    <textarea id="cfgIn" style="min-height:140px"></textarea>
+    <button class="btn pri big" id="saveCfg">Connect</button></div>`;
+  $('#saveCfg').onclick = () => { const c = parseConfig($('#cfgIn').value); if(!c) return alert('That config is missing apiKey / projectId / appId.'); LS.set('fb_cfg',c); location.reload(); };
+}
+
+function loginView(){
+  $('#tabs').style.display='none';
+  $('#main').innerHTML = `<div class="card"><h2 style="margin-top:0">Sign in</h2>
+    <label>Who are you?</label><select id="who">${S.drivers.map(d=>`<option value="${d.id}">${esc(d.name)}${d.truck?' · Truck '+esc(d.truck):''}</option>`).join('')}</select>
+    <label>PIN</label><input id="pin" class="pinbox" inputmode="numeric" maxlength="4" autocomplete="off">
+    <button class="btn pri big" id="go">Sign in</button></div>
+    ${S.drivers.length?'':'<div class="empty">No drivers set up yet — ask dispatch to add you.</div>'}`;
+  $('#go').onclick = () => {
+    const d = S.drivers.find(x=>x.id===$('#who').value);
+    if(!d || $('#pin').value.trim()!==String(d.pin)){ toast('Wrong PIN'); buzz(); return; }
+    S.me = d.id; LS.set('drv_id', d.id); afterLogin();
+  };
+}
+
+function afterLogin(){
+  S.subscribed = true;
+  $('#tabs').style.display='flex';
+  let first = true;
+  onSnapshot(query(collection(db,'loads'), where('driverId','==',S.me)), s => {
+    const prev = new Set(S.loads.map(l=>l.id));
+    S.loads = s.docs.map(d=>({id:d.id,...d.data()}));
+    if(!first){ const fresh = S.loads.filter(l=>!prev.has(l.id) && l.status!=='Delivered'); if(fresh.length){ buzz(); toast(`🚨 New load #${fresh.map(l=>l.loadNo).join(', #')}`); } }
+    first = false; render();
+  }, e => toast('Sync error: '+(e.code||e.message)));
+  let firstM = true;
+  onSnapshot(query(collection(db,'messages'), where('driverId','==',S.me)), s => {
+    if(!firstM) s.docChanges().forEach(c => { const d=c.doc.data(); if(c.type==='added' && d.from==='dispatch' && S.tab!=='chat'){ buzz(); toast('💬 Dispatch: '+d.text); } });
+    firstM = false;
+    S.messages = s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.ts-b.ts);
+    render();
+  });
+  render();
+}
+
+$('#tabs').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; S.tab=b.dataset.t; S.open=null; S.pod=null; render(); });
+
+function render(){
+  if(!S.me) return;
+  $('#hdr').textContent = '🚛 ' + (meName() || 'Driver');
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('act', b.dataset.t===S.tab));
+  const un = S.messages.filter(m=>m.from==='dispatch' && !m.readR).length;
+  $('#unread').innerHTML = un ? `<span class="badge">${un}</span>` : '';
+  if(S.pod) return; // don't wipe POD form mid-entry
+  const m = $('#main');
+  if(S.tab==='loads') m.innerHTML = S.open ? loadDetail() : loadsList();
+  else if(S.tab==='chat'){ m.innerHTML = chatView(); const ms=$('#msgs'); if(ms) ms.scrollTop=ms.scrollHeight; markRead(); }
+  else m.innerHTML = meView();
+}
+
+// ---------- loads ----------
+function loadsList(){
+  const act = S.loads.filter(l=>l.status!=='Delivered').sort((a,b)=>(a.pickup?.time||'').localeCompare(b.pickup?.time||'') || (a.createdAt||0)-(b.createdAt||0));
+  const done = S.loads.filter(l=>l.status==='Delivered').sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,10);
+  const card = l => `<div class="card tap ${S.seen.has(l.id)||l.status!=='Assigned'?'':'new'}" data-open="${l.id}">
+    <div class="h"><b>#${esc(l.loadNo)}</b>${pill(l.status)}</div>
+    <div class="route small"><i style="background:var(--blue)"></i><div>${esc(l.pickup?.name||l.pickup?.addr||'—')}<div class="muted">${fmtT(l.pickup?.time)}</div></div>
+    <i style="background:var(--ok)"></i><div>${esc(l.delivery?.name||l.delivery?.addr||'—')}<div class="muted">${fmtT(l.delivery?.time)}</div></div></div>
+    ${l.trailer?`<div class="small muted">Trailer ${esc(l.trailer)}</div>`:''}</div>`;
+  return `<h2 style="margin-top:0">Active (${act.length})</h2>${act.map(card).join('') || '<div class="empty">No active loads. You\'ll get a buzz when dispatch sends one.</div>'}
+    ${done.length?`<h2>Recently delivered</h2>${done.map(card).join('')}`:''}`;
+}
+function loadDetail(){
+  const l = S.loads.find(x=>x.id===S.open); if(!l){ S.open=null; return loadsList(); }
+  if(!S.seen.has(l.id)){ S.seen.add(l.id); LS.set('seen_loads',[...S.seen].slice(-200)); }
+  const nx = NEXT[l.status] || [];
+  const place = (t,p) => `<div class="sec"><div class="lbl">${t}</div><b>${esc(p?.name)}</b><div>${esc(p?.addr)}</div><div class="muted small">${fmtT(p?.time)}</div>
+    ${p?.addr?`<div class="navbtn"><a class="btn sm" href="${mapsNav(p.addr)}" target="_blank">🧭 Navigate</a></div>`:''}</div>`;
+  return `<button class="back" data-act="back">‹ All loads</button>
+  <div class="card"><div class="h"><b style="font-size:20px">#${esc(l.loadNo)}</b>${pill(l.status)}</div>
+    ${place('Pickup', l.pickup)}${place('Delivery', l.delivery)}
+    ${(l.trailer||l.ref||l.ferry)?`<div class="sec">${l.trailer?`<div><span class="lbl">Trailer</span> <b>${esc(l.trailer)}</b></div>`:''}${l.ref?`<div><span class="lbl">PO / Ref</span> <b>${esc(l.ref)}</b></div>`:''}${l.ferry?`<div><span class="lbl">Ferry</span> <b>${esc(l.ferry)}</b></div>`:''}</div>`:''}
+    ${l.notes?`<div class="sec"><div class="lbl">Notes from dispatch</div><div style="white-space:pre-wrap">${esc(l.notes)}</div></div>`:''}
+  </div>
+  ${nx.map((s,i)=>`<button class="btn big ${i===0?'pri':''}" data-act="status" data-s="${s}">${LABEL[s]||s}</button>`).join('')}
+  <button class="btn big" data-act="docs">📷 Add BOL / document photo</button>
+  <div class="card" style="margin-top:12px"><div class="lbl">History</div>${(l.history||[]).slice().reverse().map(h=>`<div class="small" style="margin-top:6px"><b>${esc(h.s)}</b> <span class="muted">${fmt(h.ts)}</span></div>`).join('')}</div>`;
+}
+
+function getLoc(){
+  return new Promise(res => {
+    if(!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(5), lng:+p.coords.longitude.toFixed(5)}), ()=>res(null), {enableHighAccuracy:true, timeout:7000, maximumAge:60000});
+  });
+}
+async function setStatus(l, s, extra={}){
+  const now = Date.now(); const loc = await getLoc();
+  const h = {s, ts:now, by:'driver'}; if(loc) Object.assign(h, loc);
+  const upd = {status:s, updatedAt:now, history:arrayUnion(h), ...extra}; if(loc) upd.lastLoc = {...loc, ts:now};
+  updateDoc(doc(db,'loads',l.id), upd).catch(e=>toast('Update failed: '+(e.code||e.message)));
+  toast(navigator.onLine ? `Updated: ${s}` : `Saved: ${s} — will send when back online`);
+}
+
+// ---------- photos / POD ----------
+function compress(file, max=1280, q=0.6){
+  return new Promise((res,rej) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => { let {width:w,height:h}=img; const k=Math.min(1,max/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+      let d=c.toDataURL('image/jpeg',q); if(d.length>900000) d=c.toDataURL('image/jpeg',0.4); res(d); };
+    img.onerror = rej; img.src = url;
+  });
+}
+function podView(){
+  const l = S.loads.find(x=>x.id===S.open); const full = S.pod.mode==='deliver';
+  $('#main').innerHTML = `<button class="back" data-act="cancelPod">‹ Cancel</button>
+  <div class="card"><h2 style="margin-top:0">${full?'Complete delivery':'Add documents'} · #${esc(l?.loadNo)}</h2>
+    <label>Photos (BOL, POD, freight)</label>
+    <input type="file" accept="image/*" capture="environment" id="ph" style="display:none" multiple>
+    <button class="btn" style="width:100%" data-act="pick">📷 Take / choose photo</button>
+    <div class="thumbs">${S.pod.photos.map((p,i)=>`<div><img src="${p}"><button data-act="rmPhoto" data-i="${i}">×</button></div>`).join('')}</div>
+    ${full?`<label>Receiver signature</label><canvas class="sig" id="sig"></canvas>
+    <div style="text-align:right"><button class="btn sm" data-act="clearSig" style="margin-top:6px">Clear</button></div>
+    <label>Receiver name</label><input id="signer" value="${esc(S.pod.signer||'')}" placeholder="Printed name">`:''}
+    <button class="btn pri big" data-act="submitPod">${full?'✅ Mark delivered':'Upload'}</button></div>`;
+  $('#ph').onchange = async e => {
+    for(const f of e.target.files){ try{ S.pod.photos.push(await compress(f)); }catch{ toast('Could not read that photo'); } }
+    if(full) S.pod.signer = $('#signer').value; saveSig(); podView();
+  };
+  if(full) initSig();
+}
+let sigDirty=false, sigData=null;
+function saveSig(){ const c=$('#sig'); if(c && sigDirty) sigData=c.toDataURL('image/png'); }
+function initSig(){
+  const c = $('#sig'); const r = c.getBoundingClientRect(); const dpr = window.devicePixelRatio||1;
+  c.width = r.width*dpr; c.height = r.height*dpr; const x = c.getContext('2d'); x.scale(dpr,dpr);
+  x.fillStyle='#fff'; x.fillRect(0,0,r.width,r.height); x.lineWidth=2.5; x.lineCap='round'; x.strokeStyle='#111';
+  if(sigData){ const im=new Image(); im.onload=()=>x.drawImage(im,0,0,r.width,r.height); im.src=sigData; }
+  let drawing=false;
+  const pt = e => { const b=c.getBoundingClientRect(); return [e.clientX-b.left, e.clientY-b.top]; };
+  c.onpointerdown = e => { drawing=true; sigDirty=true; c.setPointerCapture(e.pointerId); const [a,b]=pt(e); x.beginPath(); x.moveTo(a,b); };
+  c.onpointermove = e => { if(!drawing) return; const [a,b]=pt(e); x.lineTo(a,b); x.stroke(); };
+  c.onpointerup = c.onpointercancel = () => { drawing=false; };
+}
+async function submitPod(){
+  const l = S.loads.find(x=>x.id===S.open); const full = S.pod.mode==='deliver';
+  if(full){ saveSig(); if(!S.pod.photos.length && !sigDirty && !confirm('No photo or signature. Mark delivered anyway?')) return; }
+  else if(!S.pod.photos.length) return toast('Add a photo first');
+  const now = Date.now(), signer = full ? $('#signer').value.trim() : '';
+  const b = writeBatch(db);
+  S.pod.photos.forEach((img,i) => b.set(doc(collection(db,'pods')), {loadId:l.id, driverId:S.me, kind:'photo', img, ts:now+i}));
+  if(full && sigDirty) b.set(doc(collection(db,'pods')), {loadId:l.id, driverId:S.me, kind:'sig', img:sigData, signer, ts:now+99});
+  b.commit().catch(e=>toast('Upload failed: '+(e.code||e.message)));
+  if(full) await setStatus(l, 'Delivered'); else toast(navigator.onLine?'Uploaded':'Saved — will upload when back online');
+  S.pod=null; sigDirty=false; sigData=null; render();
+}
+
+// ---------- chat ----------
+function chatView(){
+  return `<div class="chat"><div class="msgs" id="msgs">${S.messages.map(m=>`<div class="m ${m.from==='driver'?'me':''}">${esc(m.text)}<small>${fmt(m.ts)}</small></div>`).join('') || '<div class="empty">Message dispatch here.</div>'}</div>
+  <form class="send" id="sendF"><input id="msgIn" placeholder="Message dispatch…" autocomplete="off"><button class="btn pri">Send</button></form></div>`;
+}
+function markRead(){
+  const un = S.messages.filter(m=>m.from==='dispatch' && !m.readR); if(!un.length) return;
+  const b = writeBatch(db); un.forEach(m=>{ m.readR=true; b.update(doc(db,'messages',m.id),{readR:true}); }); b.commit().catch(console.error);
+  $('#unread').innerHTML='';
+}
+function meView(){
+  const d = S.drivers.find(x=>x.id===S.me)||{};
+  return `<div class="card"><h2 style="margin-top:0">${esc(d.name)}</h2>${d.truck?`<div>Truck ${esc(d.truck)}</div>`:''}
+    <div class="small muted" style="margin-top:8px">Loads completed: ${S.loads.filter(l=>l.status==='Delivered').length}</div></div>
+    <div class="card small muted">Tip: add this page to your home screen (Share → Add to Home Screen) so it opens like an app.</div>
+    <button class="btn big" data-act="logout">Sign out</button>`;
+}
+
+// ---------- events ----------
+$('#main').addEventListener('click', async e => {
+  const o = e.target.closest('[data-open]'); if(o){ S.open=o.dataset.open; render(); window.scrollTo(0,0); return; }
+  const a = e.target.closest('[data-act]'); if(!a) return;
+  const l = S.loads.find(x=>x.id===S.open);
+  switch(a.dataset.act){
+    case 'back': S.open=null; render(); break;
+    case 'status': {
+      const s = a.dataset.s;
+      if(s==='Delivered'){ S.pod={mode:'deliver',photos:[]}; sigDirty=false; sigData=null; podView(); break; }
+      a.disabled = true; a.textContent='Saving…'; await setStatus(l, s); render(); break; }
+    case 'docs': S.pod={mode:'docs',photos:[]}; podView(); break;
+    case 'pick': $('#ph').click(); break;
+    case 'rmPhoto': if(S.pod.mode==='deliver'){ S.pod.signer=$('#signer').value; saveSig(); } S.pod.photos.splice(+a.dataset.i,1); podView(); break;
+    case 'clearSig': sigDirty=false; sigData=null; initSig(); break;
+    case 'cancelPod': S.pod=null; render(); break;
+    case 'submitPod': a.disabled=true; await submitPod(); break;
+    case 'logout': if(confirm('Sign out?')){ LS.del('drv_id'); location.reload(); } break;
+  }
+});
+$('#main').addEventListener('submit', e => {
+  if(e.target.id!=='sendF') return; e.preventDefault();
+  const t = $('#msgIn').value.trim(); if(!t) return;
+  addDoc(collection(db,'messages'), {driverId:S.me, from:'driver', text:t, ts:Date.now(), readD:false, readR:true});
+  $('#msgIn').value='';
+});
+
+start();
+
+}
+</script>
+</body>
+</html>
